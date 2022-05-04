@@ -1,0 +1,97 @@
+# .../php-Mysql/docker-compose.yml
+version: '3'
+
+services:
+  web1:
+    image: clovislempereur/php8.0.12-apache:1.4  #nom de l'image
+    #container_name: web-php1                     
+    environment:
+      TZ: "Europe/Paris"
+    #ports:
+    # -  "8081:80"
+    volumes:
+      - /home/client1/www:/var/www/html  # a gauche le chemin ou déposer les fichier et a droite le chemin, vers le répertoire dans le docker 
+    restart: unless-stopp   #relancer le docker des q'il est down                                  
+    depends_on: 
+       - mysql           # dépendance mysql & r proxy pour étre lancer 
+       - reverse-proxy
+    labels:
+      - "traefik.http.routers.web1.rule=Host(`web1.sdhr.ap.local`)" # nom de domain du traefik et nom de domaine du docker pour que  le conteneur trafik puisse le contacter 
+  
+  web2:
+    image: clovislempereur/php8.0.12-apache:1.4 
+    container_name: web-php2
+    environment:
+      TZ: "Europe/Paris"
+    ports:
+      -  "8082:80"
+    volumes:
+      - /home/client2/www:/var/www/html
+    restart: unless-stopped
+    depends_on:
+       - mysql
+       - reverse-proxy
+    labels:
+      - "traefik.http.routers.web2.rule=Host(`web2.sdhr.ap.local`)"
+  web3:
+    image: clovislempereur/php8.0.12-apache:1.4 
+    container_name: web-php3
+    environment:
+      TZ: "Europe/Paris"
+    ports:
+      -  "8083:80"
+    volumes:
+      - /home/client3/www:/var/www/html
+    restart: unless-stopped
+    depends_on:
+       - mysql
+       - reverse-proxy
+    labels:
+      - "traefik.http.routers.web3.rule=Host(`web3.sdhr.ap.local`)"
+  web4:
+    image: clovislempereur/php8.0.12-apache:1.4 
+    container_name: web-php4
+    environment:
+      TZ: "Europe/Paris"
+    ports:
+      -  "8084:80"
+    volumes:
+      - /home/client4/www:/var/www/html
+    restart: unless-stopped
+    depends_on:
+       - mysql
+       - reverse-proxy
+    labels:
+      - "traefik.http.routers.web4.rule=Host(`web4.sdhr.ap.local`)"
+
+  mysql:
+    #image: mysql:latest
+    image: mysql:8.0.26
+    container_name: mysql-test
+    #command: --authentication-policy=mysql_native_password
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+        TZ: "Europe/Paris"
+        MYSQL_ROOT_PASSWORD: toto #mdp sql 
+    volumes:
+        - datamysql:/var/lib/mysql  
+    restart: unless-stopped
+
+
+
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.6
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"   # pour le web 
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080" # pour le panel
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock 
+
+volumes: #création du volume pour mysql
+  datamysql:
